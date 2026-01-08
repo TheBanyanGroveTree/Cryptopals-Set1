@@ -1,7 +1,8 @@
 """
-Description:
+Description: This program implements functions that convert data encoded
+in hex and base64 to bytes and vice versa.
 Author: Aahana Sapra
-Date: 1/7/2026
+Date: 1/8/2026
 """
 
 import base64
