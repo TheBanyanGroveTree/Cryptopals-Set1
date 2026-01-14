@@ -1,7 +1,7 @@
 """
 Description: Find the key for a single-byte XOR cipher
 Author: Aahana Sapra
-Date: 1/8/2026
+Date: 1/14/2026
 """
 
 # initialize hex string
@@ -18,4 +18,27 @@ def hexToBytes(hexStr):
 def bytesToASCII(bytesArr):
     return bytesArr.decode('ascii')
 
+# define xor function
+def xorBytes(bytesArr1, bytesArr2):
+    return bytes(a ^ b for a, b in zip(bytesArr1, bytesArr2))
 
+# define character frequency counting function
+def charFrequency(xorArr):
+    frequency = {}
+    for element in xorArr:
+        # set count to 0 if key doesn't exist
+        frequency[element] = frequency.get(element, 0) + 1
+
+    return frequency
+
+# define score function
+def score():
+    # xor hex encoded string against every possible ASCII char
+    for i in range(len(asciiTable)):
+        currentCharArr = bytearray([i] * 128)
+        xor = bytesToASCII(xorBytes(currentCharArr, hexToBytes(hexStr)))
+        frequency = charFrequency(xor)
+        print(frequency)
+        
+# test progress
+score()
