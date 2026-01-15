@@ -1,7 +1,7 @@
 """
 Description: Find the key for a single-byte XOR cipher
 Author: Aahana Sapra
-Date: 1/14/2026
+Date: 1/15/2026
 """
 
 # initialize hex string
