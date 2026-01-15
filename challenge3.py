@@ -11,9 +11,11 @@ hexStr = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
 asciiTable = bytes(range(128))
 
 # define constants for scoring
-LOWERCASE = 2
-UPPERCASE = 1
-SYMBOLS_AND_WHITESPACE = 1
+SPACE = 10
+LOWERCASE = 8
+PUNCTUATION = 6
+UPPERCASE = 4
+WHITESPACE = 2
 
 # define hex to bytes conversion function
 def hexToBytes(hexStr):
@@ -40,18 +42,21 @@ def charFrequency(xorArr):
 def calculateScore(frequency):
     score = 0
     for key in frequency:
-        # lowercase letters
-        if ((frequency[key] >= 97) and (frequency[key] <= 122)):
+        # space char
+        if(key == 32):
+            score += SPACE
+        # lowercase letter
+        elif (97 <= key <= 122):
             score += LOWERCASE
-        # uppercase letters
-        elif (65 <= frequency[key] <= 90):
+        # punctuation
+        elif (key in [33, 34, 39, 44, 45, 46, 58, 59, 63]):
+            score += PUNCTUATION
+        # uppercase letter
+        elif (65 <= key <= 90):
             score += UPPERCASE
-        # symbols, numbers, and whitespace characters
-        elif ((9 <= frequency[key] <= 13) or
-              (32 <= frequency[key] <= 64) or
-              (91 <= frequency[key] <= 96) or
-              (123 <= frequency[key] <= 126)):
-            score += SYMBOLS_AND_WHITESPACE
+        # whitespace characters
+        elif (9 <= key <= 13):
+            score += WHITESPACE
 
     return score
 
@@ -61,15 +66,24 @@ def topScore():
     # xor hex encoded string against every possible ASCII char
     for i in range(len(asciiTable)):
         currentCharArr = bytearray([i] * 128)
-        xor = xorBytes(currentCharArr, hexToBytes(hexStr))
-        frequency = charFrequency(xor)
-        print(frequency)
+        currentXOR = xorBytes(currentCharArr, hexToBytes(hexStr))
+        currentFrequency = charFrequency(currentXOR)
 
         # calculate score for each ASCII char and add to score array
-        scoreArr[i] = calculateScore(frequency)
+        scoreArr[i] = calculateScore(currentFrequency)
 
-    # determine top score
+    # determine key corresponding to top score
+    topScore = 0;
+    topIndex = 0;
+    for i in range(len(scoreArr)):
+        if (scoreArr[i] > topScore):
+            topScore = scoreArr[i]
+            topIndex = i
     
+    # output key and decoded string
+    print("Key: " + chr(topIndex))
+    topXOR = xorBytes(bytearray([topIndex] * 128), hexToBytes(hexStr))
+    print("Decoded: " + str(bytesToASCII(topXOR)))
                 
 # test progress
 topScore()
