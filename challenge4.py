@@ -36,12 +36,12 @@ def bytesToASCII(bytesArr):
 
 # define xor function
 def xorBytes(bytesArr1, bytesArr2):
-    return bytes(a ^ b for a, b in zip(bytesArr1, bytesAr2))
+    return bytes(a ^ b for a, b in zip(bytesArr1, bytesArr2))
 
 # define character frequency counting function
 def charFrequency(xorArr):
     frequency = {}
-    for elemeny in xorArr:
+    for element in xorArr:
         # set count to 0 if key doesn't exist
         frequency[element] = frequency.get(element, 0) + 1
 
@@ -50,21 +50,66 @@ def charFrequency(xorArr):
 # define function to calculate score of current ASCII key
 def calculateScore(frequency):
     score = 0
-    for key in frequency:
+    for key, count in frequency.items():
         # space char
         if (key == 32):
-            score += SPACE
+            score += (SPACE * count)
         # lowercase letter
         elif (97 <= key <= 122):
-            score += LOWERCASE
+            score += (LOWERCASE * count)
         # puncutation
         elif (key in [33, 34, 39, 44, 45, 46, 58, 59, 63]):
-            score += PUNCTUATION
+            score += (PUNCTUATION * count)
         # uppercase letter
         elif (65 <= key <= 90):
-            score += UPPERCASE
+            score += (UPPERCASE * count)
         # whitespace characters
         elif (9 <= key <= 13):
-            score += WHITESPACE
+            score += (WHITESPACE * count)
 
     return score
+
+# define function to determine best key
+def topScoreAndKey(hexStr):
+    scoreArr = [0] * 128
+    # xor hex encoded string against every possible ASCII char
+    for i in range(len(asciiTable)):
+        currentCharArr = bytearray([i] * len(hexToBytes(hexStr)))
+        currentXOR = xorBytes(currentCharArr, hexToBytes(hexStr))
+        currentFrequency = charFrequency(currentXOR)
+
+        # calculate score for each ASCII char and add to score array
+        scoreArr[i] = calculateScore(currentFrequency)
+
+    # determine key corresponding to top score
+    topScore = 0;
+    topIndex = 0;
+    for i in range(len(scoreArr)):
+        if (scoreArr[i] > topScore):
+            topScore = scoreArr[i]
+            topIndex = i
+    
+    # return top score and index for corresponding key
+    return (topScore, topIndex)
+
+# define function to determine encrypted 60-char string
+def topXORStr():
+    topScore = 0
+    bestKey = 0
+    topLine = ""
+
+    for line in txtArr:
+        score, key = topScoreAndKey(line)
+        if (score > topScore):
+            topScore = score
+            bestKey = key
+            topLine = line
+
+    decodedStr = xorBytes(bytearray([bestKey] * len(hexToBytes(topLine))),
+                      hexToBytes(topLine))
+
+    # comma adds a space in between elements
+    print("Key:", chr(bestKey))
+    print("Decoded:", bytesToASCII(decodedStr))
+
+topXORStr()
