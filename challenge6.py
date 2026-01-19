@@ -16,6 +16,10 @@ for line in txtArr:
     print(line)
 """
 
+# initialize constants for min and max key size
+MIN_KEY_SIZE = 2
+MAX_KEY_SIZE = 40
+
 # define base64 to bytes conversion function
 def base64ToBytes(base64Str):
     return base64.b64decode(base64Str)
@@ -26,12 +30,24 @@ def xorBytes(bytesArr1, bytesArr2):
 
 # define function to calculate hamming distance
 def hammingDistance(xor):
-    return xor.bit_count()
+    return int.from_bytes(xor, byteorder='big').bit_count()
+
+"""
+# Test hamming distance calculation
+# define ASCII to bytes conversion function
+def asciiToBytes(asciiStr):
+    return asciiStr.encode('ascii')
+
+str1 = asciiToBytes("this is a test")
+str2 = asciiToBytes("wokka wokka!!!")
+testXOR = xorBytes(str1, str2)
+print(hammingDistance(testXOR))
+"""
 
 # define function to calculate normalized hamming distance
-def normalizedHammingDistance(xor, keySize):
+def normalizedHammingDistance(data, keySize):
     # not enough data to compare
-    if (len(xor) < (2 * keySize)):
+    if (len(data) < (2 * keySize)):
         return 0.0
 
     # initialize var to calculate average
@@ -39,10 +55,10 @@ def normalizedHammingDistance(xor, keySize):
     numComparisons = 0
     
     # compare blocks of length keySize
-    for i in range(0, len(xor) - xor, xor):
+    for i in range(0, len(data) - data, data):
         # extract chucks of length keySize
-        block1 = xor[i : (i+keySize)]
-        block2 = xor[(i+keySize) : (i + (2 * keySize))]
+        block1 = data[i : (i+keySize)]
+        block2 = data[(i+keySize) : (i + (2 * keySize))]
 
         # calculate hamming distance between blocks
         blockHamDist = hammingDistance(xorBytes(block1, block2))
@@ -56,3 +72,16 @@ def normalizedHammingDistance(xor, keySize):
     normalizedHamDist = averageHamDist / keySize
 
     return normalizedHamDist
+
+# define function to determine key size with smallest normalized hamming dist
+def determineKeySize(data):
+    normDistArr = {}
+    for key in range(MIN_KEY_SIZE, MAX_KEY_SIZE):
+        normDistArr[key] = normalizedHammingDistance(data, key)
+
+    # compare elements based on value (second item in tuple)
+    smallestPair = min(data.items(), key=lambda item: item[1])
+
+    return smallestPair[0] # return key size
+
+# define function to split ciphertext into blocks of length key size
