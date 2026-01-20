@@ -1,20 +1,12 @@
 """
 Description: Break repeating-key XOR
 Author: Aahana Sapra 
-Date: 1/18/25
+Date: 1/19/25
 """
 
 import requests
 import base64
-
-# open url to .txt file and read contents
-txtURL = "https://cryptopals.com/static/challenge-data/6.txt"
-txtArr = requests.get(txtURL).text.splitlines()
-"""
-for line in txtArr:
-    print(type(line))
-    print(line)
-"""
+from itertools import zip_longest
 
 # initialize constants for min and max key size
 MIN_KEY_SIZE = 2
@@ -39,8 +31,10 @@ def xorBytes(bytesArr1, bytesArr2):
     return bytes(a ^ b for a, b in zip(bytesArr1, bytesArr2))
 
 # define function to calculate hamming distance
-def hammingDistance(xor):
-    return int.from_bytes(xor, byteorder='big').bit_count()
+def hammingDistance(bytesArr1, bytesArr2):
+    # bin() converts resulting integer for XOR into binary string
+    # count() counts number of 1's in binary string
+    return sum(bin(a ^ b).count('1') for a, b in zip(bytesArr1, bytesArr2))
 
 """
 # Test hamming distance calculation
@@ -71,7 +65,7 @@ def normalizedHammingDistance(data, keySize):
         block2 = data[(i+keySize) : (i + (2 * keySize))]
 
         # calculate hamming distance between blocks
-        blockHamDist = hammingDistance(xorBytes(block1, block2))
+        blockHamDist = hammingDistance(block1, block2)
 
         # update values for calculating average
         totalHamDist += blockHamDist
@@ -106,8 +100,9 @@ def transpose(data, keySize):
     blocks = splitBlocks(data, keySize)
     # * = unpacking operator
     # zip() extracts elements from iterables based on index
-    transposedBlocks = list(zip(*blocks))
-    return transposedBlocks
+    # make sure no bytes are getting cut off
+    return [bytes(filter(lambda b: b is not None, element))
+            for element in zip_longest(*blocks)]
 
 # define character frequency counting function
 def charFrequency(xorArr):
@@ -141,12 +136,12 @@ def calculateScore(frequency):
     return score
 
 # define function to determine best key
-def topScoreAndKey(hexStr):
+def topScoreAndKey(bytesArr):
     scoreArr = [0] * 128
-    # xor hex encoded string against every possible ASCII char
+    # xor bytes encoded ciphertext against every possible ASCII char
     for i in range(len(asciiTable)):
-        currentCharArr = bytearray([i] * len(hexToBytes(hexStr)))
-        currentXOR = xorBytes(currentCharArr, hexToBytes(hexStr))
+        currentCharArr = bytearray([i] * len(bytesArr))
+        currentXOR = xorBytes(currentCharArr, bytesArr)
         currentFrequency = charFrequency(currentXOR)
 
         # calculate score for each ASCII char and add to score array
@@ -160,5 +155,48 @@ def topScoreAndKey(hexStr):
             topScore = scoreArr[i]
             topIndex = i
     
-    # return top score and index for corresponding key
-    return (topScore, topIndex)
+    # return top index for corresponding key
+    return topIndex
+
+# determine key given transposed ciphertext
+def determineKey(transpose):
+    key = []
+    for block in transpose:
+        keyByte = topScoreAndKey(block)
+        key.append(keyByte)
+
+    return bytes(key)
+
+# define bytes to ASCII conversion function
+def bytesToASCII(bytesArr):
+    return bytesArr.decode('ascii')
+
+# open url to .txt file and read contents
+txtURL = "https://cryptopals.com/static/challenge-data/6.txt"
+txtArr = requests.get(txtURL).text.splitlines()
+"""
+for line in txtArr:
+    print(type(line))
+    print(line)
+"""
+
+# decode ciphertext from base64 to bytes
+ciphertext = base64ToBytes("".join(txtArr))
+
+# determine key size
+keySize = determineKeySize(ciphertext)
+
+# transpose ciphertext
+transposedCiphertext = transpose(ciphertext, keySize)
+
+# determine key
+key = determineKey(transposedCiphertext)
+
+# extend key and decrypt ciphertext
+# number of times key fully goes into ciphertext + 1
+extendedKey = key * ((len(ciphertext) // len(key)) + 1)
+plaintext = xorBytes(ciphertext, extendedKey)
+
+# output results
+print("Key:", bytesToASCII(key))
+print(bytesToASCII(plaintext))
