@@ -55,7 +55,7 @@ def normalizedHammingDistance(data, keySize):
     numComparisons = 0
     
     # compare blocks of length keySize
-    for i in range(0, len(data) - data, data):
+    for i in range(0, (len(data) - (2 * keySize) + 1), keySize):
         # extract chucks of length keySize
         block1 = data[i : (i+keySize)]
         block2 = data[(i+keySize) : (i + (2 * keySize))]
@@ -68,6 +68,9 @@ def normalizedHammingDistance(data, keySize):
         numComparisons += 1
 
     # calculate normalized hamming distance
+    if (numComparisons == 0):
+        return 0.0
+
     averageHamDist = totalHamDist / numComparisons
     normalizedHamDist = averageHamDist / keySize
 
@@ -75,13 +78,23 @@ def normalizedHammingDistance(data, keySize):
 
 # define function to determine key size with smallest normalized hamming dist
 def determineKeySize(data):
-    normDistArr = {}
+    normDistDict = {}
     for key in range(MIN_KEY_SIZE, MAX_KEY_SIZE):
-        normDistArr[key] = normalizedHammingDistance(data, key)
+        normDistDict[key] = normalizedHammingDistance(data, key)
 
     # compare elements based on value (second item in tuple)
-    smallestPair = min(data.items(), key=lambda item: item[1])
+    smallestPair = min(normDistDict.items(), key=lambda item: item[1])
 
     return smallestPair[0] # return key size
 
 # define function to split ciphertext into blocks of length key size
+def splitBlocks(data, keySize):
+    return [data[i:i+keySize] for i in range(0, len(data), keySize)]
+
+# define function to transpose blocks
+def transpose(data, keySize):
+    blocks = splitBlocks(data, keySize)
+    # * = unpacking operator
+    # zip() extracts elements from iterables based on index
+    transposedBlocks = list(zip(*blocks))
+    return transposedBlocks
