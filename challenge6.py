@@ -20,6 +20,16 @@ for line in txtArr:
 MIN_KEY_SIZE = 2
 MAX_KEY_SIZE = 40
 
+# initialize bytes object containing every char in ASCII table
+asciiTable = bytes(range(128))
+
+# define constants for scoring
+SPACE = 10
+LOWERCASE = 8
+PUNCTUATION = 6
+UPPERCASE = 4
+WHITESPACE = 2
+
 # define base64 to bytes conversion function
 def base64ToBytes(base64Str):
     return base64.b64decode(base64Str)
@@ -98,3 +108,57 @@ def transpose(data, keySize):
     # zip() extracts elements from iterables based on index
     transposedBlocks = list(zip(*blocks))
     return transposedBlocks
+
+# define character frequency counting function
+def charFrequency(xorArr):
+    frequency = {}
+    for element in xorArr:
+        # set count to 0 if key doesn't exist
+        frequency[element] = frequency.get(element, 0) + 1
+
+    return frequency
+
+# define function to calculate score of current ASCII key
+def calculateScore(frequency):
+    score = 0
+    for key, count in frequency.items():
+        # space char
+        if (key == 32):
+            score += (SPACE * count)
+        # lowercase letter
+        elif (97 <= key <= 122):
+            score += (LOWERCASE * count)
+        # puncutation
+        elif (key in [33, 34, 39, 44, 45, 46, 58, 59, 63]):
+            score += (PUNCTUATION * count)
+        # uppercase letter
+        elif (65 <= key <= 90):
+            score += (UPPERCASE * count)
+        # whitespace characters
+        elif (9 <= key <= 13):
+            score += (WHITESPACE * count)
+
+    return score
+
+# define function to determine best key
+def topScoreAndKey(hexStr):
+    scoreArr = [0] * 128
+    # xor hex encoded string against every possible ASCII char
+    for i in range(len(asciiTable)):
+        currentCharArr = bytearray([i] * len(hexToBytes(hexStr)))
+        currentXOR = xorBytes(currentCharArr, hexToBytes(hexStr))
+        currentFrequency = charFrequency(currentXOR)
+
+        # calculate score for each ASCII char and add to score array
+        scoreArr[i] = calculateScore(currentFrequency)
+
+    # determine key corresponding to top score
+    topScore = 0;
+    topIndex = 0;
+    for i in range(len(scoreArr)):
+        if (scoreArr[i] > topScore):
+            topScore = scoreArr[i]
+            topIndex = i
+    
+    # return top score and index for corresponding key
+    return (topScore, topIndex)
